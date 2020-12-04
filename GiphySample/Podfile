@@ -1,0 +1,13 @@
+source 'https://github.com/CocoaPods/Specs.git'
+platform :ios, '14.0'
+
+target 'GiphySample' do
+  # Comment the next line if you don't want to use dynamic frameworks
+  use_frameworks!
+
+  # Pods for GiphySample
+  pod 'Giphy', :podspec => 'https://s3.amazonaws.com/sdk.mobile.giphy.com/SDK/2.0.9/Giphy.podspec'
+  pod 'RxSwift', '5.1.1'
+  pod 'RxCocoa', '5.1.1'
+
+end
