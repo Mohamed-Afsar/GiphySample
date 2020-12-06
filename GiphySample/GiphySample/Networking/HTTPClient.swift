@@ -11,6 +11,7 @@ import RxSwift
 final class HTTPClient: HTTPClientProtocol {
     // MARK: Functions
     func execute<T>(request: HTTPRequestProtocol, environment: HTTPEnvironmentProtocol) -> Observable<T> where T : Decodable {
+        // By doing this way we have more control compared to 'URLSession.shared.rx'.
         return Observable.create { (observer) -> Disposable in
             guard let urlRequest = request.urlRequest(with: environment) else {
                 observer.onError(ClientError.requestCreationFailed)

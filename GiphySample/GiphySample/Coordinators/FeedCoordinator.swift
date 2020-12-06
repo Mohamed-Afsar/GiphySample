@@ -38,7 +38,9 @@ final class FeedCoordinator: FeedCoordinatorProtocol {
                                                          image: page.icon(),
                                                          tag: page.orderNumber())
         }
+        let viewModel = FeedViewModel(interactor: FeedViewInteractor())
         let feedVC: FeedViewController = .gs_Instantiate()
+        feedVC.viewModel = viewModel
         navigationController.pushViewController(feedVC, animated: false)
     }
 }
