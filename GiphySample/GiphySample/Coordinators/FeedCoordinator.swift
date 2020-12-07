@@ -33,12 +33,17 @@ final class FeedCoordinator: FeedCoordinatorProtocol {
 
     func start() {
         navigationController.setNavigationBarHidden(false, animated: false)
+        let title: String
         if let page = tabBarPage {
             navigationController.tabBarItem = UITabBarItem.init(title: page.titleValue(),
                                                          image: page.icon(),
                                                          tag: page.orderNumber())
+            title = page.titleValue()
         }
-        let viewModel = FeedViewModel(interactor: FeedViewInteractor())
+        else {
+            title = "Feed"
+        }
+        let viewModel = FeedViewModel(interactor: FeedViewInteractor(), title: title)
         let feedVC: FeedViewController = .gs_Instantiate()
         feedVC.viewModel = viewModel
         navigationController.pushViewController(feedVC, animated: false)

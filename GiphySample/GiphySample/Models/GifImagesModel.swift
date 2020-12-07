@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct GifImagesModel: Decodable {
+struct GifImagesModel: Decodable, Hashable, Equatable {
     let fixed_height: FixedHeight
     let fixed_width: FixedWidth
     
@@ -38,11 +38,12 @@ protocol GifImageMeta {
 }
 
 extension GifImagesModel {
-    struct FixedHeight: GifImageMeta, Decodable, CustomStringConvertible {
+    struct FixedHeight: GifImageMeta, Decodable, Equatable, Hashable, CustomStringConvertible {
         let url: String
         let width: String
         let height: String
         
+        // CustomStringConvertible
         var description: String {
             """
             url: \(url)
@@ -52,11 +53,12 @@ extension GifImagesModel {
         }
     }
     
-    struct FixedWidth: GifImageMeta, Decodable, CustomStringConvertible {
+    struct FixedWidth: GifImageMeta, Decodable, Equatable, Hashable, CustomStringConvertible {
         let url: String
         let width: String
         let height: String
         
+        // CustomStringConvertible
         var description: String {
             """
             url: \(url)

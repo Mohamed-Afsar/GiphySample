@@ -25,6 +25,7 @@ final class TabCoordinator: TabCoordinatorProtocol {
     init(_ navigationController: UINavigationController) {
         self.navigationController = navigationController
         tabBarController = .init()
+        _updateStyle(tabBarController: tabBarController)
     }
     
     func start() {
@@ -49,6 +50,13 @@ extension TabCoordinator: CoordinatorFinishDelegate {
 
 // MARK: Helper Functions
 private extension TabCoordinator {
+    
+    func _updateStyle(tabBarController: UITabBarController) {
+        tabBarController.tabBar.barStyle = .black
+        tabBarController.tabBar.barTintColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 1)
+        tabBarController.tabBar.isTranslucent = false
+        tabBarController.tabBar.tintColor = .white
+    }
     
     func _getCoordinator(_ page: TabBarPage) -> Coordinator {
         let navController = UINavigationController()

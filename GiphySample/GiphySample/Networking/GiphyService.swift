@@ -18,5 +18,10 @@ final class GiphyService: GiphyServiceProtocol {
         let request = GifsEndpoint.trending(apiKey: _environment.apiKey, offset: offset)
         return _httpClient.execute(request: request, environment: _environment)
     }
+    
+    func getGifsMatching(query: String, offset: Int32) -> Observable<SearchModel> {
+        let request = GifsEndpoint.search(apiKey: _environment.apiKey, query: query, offset: offset)
+        return _httpClient.execute(request: request, environment: _environment)
+    }
 }
 

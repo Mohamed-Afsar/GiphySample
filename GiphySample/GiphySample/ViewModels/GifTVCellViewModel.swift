@@ -11,6 +11,7 @@ import GiphyUISDK
 
 final class GifTVCellViewModel {
     // MARK: ICons
+    let id: String
     let title: String
     let imageMeta: GifImageMeta
     
@@ -21,6 +22,7 @@ final class GifTVCellViewModel {
     private var _assetTask: URLSessionTask?
     
     init(model: GifModel) {
+        self.id = model.id
         self.title = model.title
         self.imageMeta = model.images.preferredMeta
         

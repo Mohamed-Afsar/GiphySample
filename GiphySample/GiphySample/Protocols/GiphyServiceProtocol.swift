@@ -10,4 +10,5 @@ import RxSwift
 
 protocol GiphyServiceProtocol {
     func getTrendingGifs(offset: Int32) -> Observable<TrendingModel>
+    func getGifsMatching(query: String, offset: Int32) -> Observable<SearchModel>
 }

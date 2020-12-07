@@ -13,20 +13,32 @@ final class GifTableViewCell: UITableViewCell {
     // MARK: Static Cons
     static let reuseId = "GifTableViewCell" // NO I18N
     static let horizontalPadding: CGFloat = 15
-    static let verticalPadding: CGFloat = 5
+    static let verticalPadding: CGFloat = 3
     
     // MARK: Private ICons
     private let _containerVw: UIView = {
         let vw = UIView()
-        vw.translatesAutoresizingMaskIntoConstraints = false; return vw
-    }()
-    
-    private let _gifImgVw: GiphyYYAnimatedImageView = {
-        let vw = GiphyYYAnimatedImageView(); vw.backgroundColor = .yellow
+        vw.layer.cornerRadius = 6
+        vw.clipsToBounds = true
         vw.translatesAutoresizingMaskIntoConstraints = false; return vw
     }()
     
     // MARK: Private IVars
+    private lazy var _gifImgVw: GiphyYYAnimatedImageView = {
+        let vw = GiphyYYAnimatedImageView()
+        vw.translatesAutoresizingMaskIntoConstraints = false; return vw
+    }()
+    private lazy var _favBtn: UIButton = {
+        let btn = UIButton(type: .custom)
+        btn.setImage(UIImage(systemName: "heart"), for: .normal) // NO I18N
+        btn.setImage(UIImage(systemName: "heart.fill"), for: .selected) // NO I18N
+        btn.tintColor = .white
+        btn.contentVerticalAlignment = .fill
+        btn.contentHorizontalAlignment = .fill
+        btn.addTarget(self, action: #selector(self._favBtnTapped), for: .touchUpInside)
+        btn.isHidden = true
+        btn.translatesAutoresizingMaskIntoConstraints = false; return btn
+    }()
     private var _disposeBag = DisposeBag()
     private var _viewModel: GifTVCellViewModel?
     private lazy var _imgVwARatioConstraint = _gifImgVw.heightAnchor.constraint(equalTo: _gifImgVw.widthAnchor, multiplier: 1)
@@ -48,8 +60,7 @@ final class GifTableViewCell: UITableViewCell {
         _viewModel = nil
         _imgVwARatioConstraint.isActive = false
         _gifImgVw.image = nil
-//        label.text = ""
-//        label.isHidden = false
+        _favBtn.isHidden = true
     }
 }
 
@@ -61,17 +72,16 @@ internal extension GifTableViewCell {
         _adjustGifImgVwDimensions(viewModel: viewModel)
         _viewModel?.gifImage.subscribeOn(MainScheduler.instance).bind(onNext: { [weak self] in
             self?._gifImgVw.image = $0
+            self?._favBtn.isHidden = ($0 == nil)
             
             print("Received Gif: _viewModel?.title: \(self?._viewModel?.title)")
         })
         .disposed(by: _disposeBag)
         
-        /*
-        button.rx.tap
-            .map { viewModel.id }    //emit the cell's viewModel id when the button is clicked for identification purposes.
-            .bind(to: buttonClicked) //problem binding because of optional.
-            .disposed(by: disposeBag)
-        */
+        _favBtn.rx.tap
+            .map { viewModel.id }
+            .bind(to: favouriteTapped)
+            .disposed(by: _disposeBag)
     }
 }
 
@@ -95,6 +105,41 @@ private extension GifTableViewCell {
         _gifImgVw.superview?.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|[gifImgVw]|", metrics: nil, views: variableBindings))
         _gifImgVw.superview?.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|[gifImgVw]|", metrics: nil, views: variableBindings))
         _imgVwARatioConstraint.isActive = true
+        
+        _addFavouriteBtnHierarchy()
+    }
+    
+    func _addFavouriteBtnHierarchy() {
+        let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        _containerVw.addSubview(container)
+        NSLayoutConstraint.activate([
+            container.widthAnchor.constraint(equalToConstant: 120),
+            container.heightAnchor.constraint(equalToConstant: 120),
+            container.centerXAnchor.constraint(equalTo: container.superview!.trailingAnchor),
+            container.centerYAnchor.constraint(equalTo: container.superview!.bottomAnchor),
+        ])
+        
+        let triangleImg = UIImage(systemName: "triangle.fill")?.withAlignmentRectInsets(UIEdgeInsets(top: 10, left: 0, bottom: 10, right: 0))
+        let bgImgVw = UIImageView(image: triangleImg)
+        bgImgVw.tintColor = .black
+        bgImgVw.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(bgImgVw)
+        bgImgVw.superview?.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|[bgImgVw]|", metrics: nil, views: ["bgImgVw": bgImgVw]))
+        bgImgVw.superview?.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|[bgImgVw]", metrics: nil, views: ["bgImgVw": bgImgVw]))
+        bgImgVw.heightAnchor.constraint(equalTo: container.heightAnchor, multiplier: 0.5).isActive = true
+        
+        _containerVw.addSubview(_favBtn)
+        NSLayoutConstraint.activate([
+            _favBtn.widthAnchor.constraint(equalToConstant: 24),
+            _favBtn.heightAnchor.constraint(equalToConstant: 22),
+            _favBtn.trailingAnchor.constraint(equalTo: container.superview!.trailingAnchor, constant: -4),
+            _favBtn.bottomAnchor.constraint(equalTo: container.superview!.bottomAnchor, constant: -4),
+        ])
+    }
+    
+    @objc func _favBtnTapped(btn: UIButton) {
+        btn.isSelected = !btn.isSelected
     }
     
     func _adjustGifImgVwDimensions(viewModel: GifTVCellViewModel) {
