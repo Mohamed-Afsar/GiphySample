@@ -33,12 +33,19 @@ final class FavouritesCoordinator: FavouritesCoordinatorProtocol {
 
     func start() {
         navigationController.setNavigationBarHidden(false, animated: false)
+        let title: String
         if let page = tabBarPage {
             navigationController.tabBarItem = UITabBarItem.init(title: page.titleValue(),
                                                          image: page.icon(),
                                                          tag: page.orderNumber())
+            title = page.titleValue()
         }
+        else {
+            title = "Favourites"
+        }
+        let viewModel = FavouritesViewModel(interactor: FavouritesViewInteractor(), title: title)
         let favouriteVC: FavouritesViewController = .gs_Instantiate()
+        favouriteVC.viewModel = viewModel
         navigationController.pushViewController(favouriteVC, animated: false)
     }
 }

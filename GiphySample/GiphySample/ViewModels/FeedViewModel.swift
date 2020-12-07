@@ -13,7 +13,10 @@ final class FeedViewModel {
     // MARK: Internal Types
     // When the complexity of the app grows we shall separate the 'search' functionality.
     struct Input {
-        let favouriteTapped: Observable<String>
+        // MARK: Typealias
+        typealias FavouriteState = (isFavourite: Bool, image: PersistableImage)
+        
+        let favouriteTapped: Observable<FavouriteState>
         let searchTextDriver: Driver<String>
     }
 
@@ -22,6 +25,7 @@ final class FeedViewModel {
         let searchedGifsDriver: Driver<[GifTVCellViewModel]>
         let isFetchingTrendingGifsDriver: Driver<Bool>
         let isSearchingGifsDriver: Driver<Bool>
+        let favouritesStateRelay: BehaviorRelay<Set<String>>
     }
     
     // MARK: ICons
@@ -30,6 +34,7 @@ final class FeedViewModel {
     // MARK: Private ICons
     private let _interactor: FeedViewInteractor
     private let _disposeBag = DisposeBag()
+    private let _favouritesStateRelayHolder = BehaviorRelay<Set<String>>(value: [])
     
     init(interactor: FeedViewInteractor, title: String) {
         self._interactor = interactor
@@ -68,7 +73,11 @@ final class FeedViewModel {
 
         let isFetchingTrendingGifsDriver = _interactor.isFetchingTrendingGifs.asDriver(onErrorJustReturn: false)
         let isSearchingGifsDriver = _interactor.isSearchingGifs.asDriver(onErrorJustReturn: false)
+                
+        _interactor._favouriteGifsIdRelay
+            .bind(to: _favouritesStateRelayHolder)
+            .disposed(by: _disposeBag)
         
-        return Output(trendingGifsDriver: dataDriver, searchedGifsDriver: searchedDataDriver, isFetchingTrendingGifsDriver: isFetchingTrendingGifsDriver, isSearchingGifsDriver: isSearchingGifsDriver)
+        return Output(trendingGifsDriver: dataDriver, searchedGifsDriver: searchedDataDriver, isFetchingTrendingGifsDriver: isFetchingTrendingGifsDriver, isSearchingGifsDriver: isSearchingGifsDriver, favouritesStateRelay: _favouritesStateRelayHolder)
     }
 }

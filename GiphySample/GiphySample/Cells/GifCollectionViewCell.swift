@@ -1,18 +1,18 @@
 //
-//  GifTableViewCell.swift
+//  GifCollectionViewCell.swift
 //  GiphySample
 //
-//  Created by Mohamed Afsar on 05/12/20.
+//  Created by Mohamed Afsar on 07/12/20.
 //
 
 import UIKit
 import RxSwift
 import GiphyUISDK
 
-final class GifTableViewCell: UITableViewCell {
+final class GifCollectionViewCell: UICollectionViewCell {
     // MARK: Static Cons
-    static let reuseId = "GifTableViewCell" // NO I18N
-    static let horizontalPadding: CGFloat = 15
+    static let reuseId = "GifCollectionViewCell" // NO I18N
+    static let horizontalPadding: CGFloat = 3
     static let verticalPadding: CGFloat = 3
     
     // MARK: Private ICons
@@ -26,6 +26,8 @@ final class GifTableViewCell: UITableViewCell {
     // MARK: Private IVars
     private lazy var _gifImgVw: GiphyYYAnimatedImageView = {
         let vw = GiphyYYAnimatedImageView()
+        vw.clipsToBounds = true
+        vw.contentMode = .scaleAspectFill
         vw.translatesAutoresizingMaskIntoConstraints = false; return vw
     }()
     private lazy var _favBtn: UIButton = {
@@ -35,12 +37,11 @@ final class GifTableViewCell: UITableViewCell {
         btn.tintColor = .white
         btn.contentVerticalAlignment = .fill
         btn.contentHorizontalAlignment = .fill
-        btn.isHidden = true
+        btn.isSelected = true
         btn.translatesAutoresizingMaskIntoConstraints = false; return btn
     }()
     private var _disposeBag = DisposeBag()
-    private var _viewModel: GifTVCellViewModel?
-    private lazy var _imgVwARatioConstraint = _gifImgVw.heightAnchor.constraint(equalTo: _gifImgVw.widthAnchor, multiplier: 1)
+    private var _viewModel: GifCnVwCellViewModel?
     
     // MARK: Initialization
     required init?(coder: NSCoder) {
@@ -54,45 +55,32 @@ final class GifTableViewCell: UITableViewCell {
     
     override func prepareForReuse() {
         super.prepareForReuse()
-        _viewModel?.ceaseAssetTask()
         _disposeBag = DisposeBag()
         _viewModel = nil
-        _imgVwARatioConstraint.isActive = false
         _gifImgVw.image = nil
-        _favBtn.isHidden = true
+        _favBtn.isSelected = true
     }
 }
 
 // MARK: Internal Functions
-internal extension GifTableViewCell {
-    func bindViewModel<O>(viewModel: GifTVCellViewModel, favouriteTapped: O) where O: ObserverType, O.Element == FeedViewModel.Input.FavouriteState {
+internal extension GifCollectionViewCell {
+    func bindViewModel<O>(viewModel: GifCnVwCellViewModel, favouriteTapped: O) where O: ObserverType, O.Element == FeedViewModel.Input.FavouriteState {
         
         _viewModel = viewModel
-        _adjustGifImgVwDimensions(viewModel: viewModel)
-        _viewModel?.gifImage.subscribeOn(MainScheduler.instance).bind(onNext: { [weak self] in
-            self?._gifImgVw.image = $0
-            self?._favBtn.isHidden = ($0 == nil)
-        })
-        .disposed(by: _disposeBag)
+        let imgUrl = CoreDataManager.shared.documentsDirectory.appendingPathComponent(viewModel.relativeDocDirImgPath)
         
-        _viewModel?.isFavourite
-            .subscribeOn(MainScheduler.instance)
-            .bind(to: _favBtn.rx.isSelected)
-            .disposed(by: _disposeBag)
+        let image = GiphyYYImage(contentsOfFile: imgUrl.path)
+        _gifImgVw.image = image
         
         _favBtn.rx.tap
-            .map { [weak self] () -> FeedViewModel.Input.FavouriteState in
+            .map { [weak self] () -> FavouritesViewModel.Input.FavouriteState in
                 var isFavourite = false
-                var imgData = Data()
-                var width: Int32 = 0, height: Int32 = 0
+                let imgData = image?.animatedImageData ?? Data()
                 if let strongSelf = self {
                     strongSelf._favBtn.isSelected = !strongSelf._favBtn.isSelected
-                    imgData = viewModel.gifImage.value?.animatedImageData ?? Data()
-                    width = Int32(viewModel.imageMeta.width) ?? 0
-                    height = Int32(viewModel.imageMeta.height) ?? 0
                     isFavourite = strongSelf._favBtn.isSelected
                 }
-                let gifImage = GifImage(id: viewModel.id, data: imgData, width: width, height: height)
+                let gifImage = GifImage(id: viewModel.id, data: imgData, width: viewModel.width, height: viewModel.height)
                 return (isFavourite: isFavourite, image: gifImage)
              }
             .bind(to: favouriteTapped)
@@ -101,25 +89,20 @@ internal extension GifTableViewCell {
 }
 
 // MARK: Helper Functions
-private extension GifTableViewCell {
+private extension GifCollectionViewCell {
     func _addViewHierarchy() {
         let variableBindings = ["containerVw": _containerVw, "gifImgVw": _gifImgVw]
         
         contentView.addSubview(_containerVw)
-        let hConstraints = NSLayoutConstraint.constraints(withVisualFormat: "H:|-(padding)-[containerVw]-(padding)-|", metrics: ["padding": GifTableViewCell.horizontalPadding], views: variableBindings)
+        let hConstraints = NSLayoutConstraint.constraints(withVisualFormat: "H:|-(padding)-[containerVw]-(padding)-|", metrics: ["padding": GifCollectionViewCell.horizontalPadding], views: variableBindings)
         _containerVw.superview?.addConstraints(hConstraints)
         
-        let vConstraints = NSLayoutConstraint.constraints(withVisualFormat: "V:|-(padding)-[containerVw]", metrics: ["padding": GifTableViewCell.verticalPadding], views: variableBindings)
+        let vConstraints = NSLayoutConstraint.constraints(withVisualFormat: "V:|-(padding)-[containerVw]-(padding)-|", metrics: ["padding": GifCollectionViewCell.verticalPadding], views: variableBindings)
         _containerVw.superview?.addConstraints(vConstraints)
-        
-        let btmConstraint = _containerVw.bottomAnchor.constraint(equalTo: _containerVw.superview!.bottomAnchor, constant: -GifTableViewCell.verticalPadding)
-        btmConstraint.priority = .fittingSizeLevel
-        btmConstraint.isActive = true
-                
+                        
         _containerVw.addSubview(_gifImgVw)
         _gifImgVw.superview?.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|[gifImgVw]|", metrics: nil, views: variableBindings))
         _gifImgVw.superview?.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|[gifImgVw]|", metrics: nil, views: variableBindings))
-        _imgVwARatioConstraint.isActive = true
         
         _addFavouriteBtnHierarchy()
     }
@@ -151,19 +134,5 @@ private extension GifTableViewCell {
             _favBtn.trailingAnchor.constraint(equalTo: container.superview!.trailingAnchor, constant: -4),
             _favBtn.bottomAnchor.constraint(equalTo: container.superview!.bottomAnchor, constant: -4),
         ])
-    }
-    
-    func _adjustGifImgVwDimensions(viewModel: GifTVCellViewModel) {
-        let multiplier: CGFloat
-        if let height = Float(viewModel.imageMeta.height), let width = Float(viewModel.imageMeta.width) {
-            let ratio = CGFloat(height/width)
-            multiplier = (ratio * 100).rounded(.down) / 100
-        }
-        else {
-            multiplier = 1
-        }
-        _imgVwARatioConstraint.isActive = false
-        _imgVwARatioConstraint = _gifImgVw.heightAnchor.constraint(equalTo: _gifImgVw.widthAnchor, multiplier: multiplier)
-        _imgVwARatioConstraint.isActive = true
     }
 }

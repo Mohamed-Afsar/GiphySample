@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import RxSwift
 import RxRelay
 import GiphyUISDK
 
@@ -16,7 +17,12 @@ final class GifTVCellViewModel {
     let imageMeta: GifImageMeta
     
     // MARK: IVars
+    let isFavourite = BehaviorRelay<Bool>(value: false)
     let gifImage = BehaviorRelay<GiphyYYImage?>(value: nil)
+    let favouritesUpdate = BehaviorRelay<Set<String>>(value: [])
+    
+    // MARK: Private ICons
+    private let _disposeBag = DisposeBag()
     
     // MARK: Private IVars
     private var _assetTask: URLSessionTask?
@@ -32,6 +38,11 @@ final class GifTVCellViewModel {
                 print("GifTVCellViewModel: downloadAsset: error: \(error)")
             }
         }
+        
+        favouritesUpdate
+            .map { $0.contains(model.id) }
+            .bind(to: isFavourite)
+            .disposed(by: _disposeBag)
     }
     
     func ceaseAssetTask() {

@@ -21,7 +21,7 @@ final class FeedViewController: UIViewController {
     
     // MARK: Private ICons
     private let _disposeBag = DisposeBag()
-    private let _favouriteTapped = PublishSubject<String>()
+    private let _favouriteTapped = PublishSubject<FeedViewModel.Input.FavouriteState>()
     private let _feedActivityIndicator: UIActivityIndicatorView = {
         let aVw = UIActivityIndicatorView(style: .large)
         aVw.translatesAutoresizingMaskIntoConstraints = false
@@ -53,7 +53,6 @@ final class FeedViewController: UIViewController {
         _configureFeedEnvironmet()
         _bindViewModel()
         
-        #warning("Temp Comment")
         viewModel.loadTrendingGifs()
     }
 }
@@ -66,7 +65,6 @@ private extension FeedViewController {
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationController?.navigationBar.barStyle = .black
         navigationController?.navigationBar.barTintColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 1)
-//        navigationController?.navigationBar.tintColor = .white
         navigationController?.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
         navigationController?.navigationBar.isTranslucent = false
         
@@ -160,16 +158,16 @@ private extension FeedViewController {
         self._bind(table: self.feedTableVw, driver: output.trendingGifsDriver, buttonTap: _favouriteTapped)
     }
     
-    func _bind(table: UITableView, driver: Driver<[GifTVCellViewModel]>, buttonTap: PublishSubject<String>) {
+    func _bind(table: UITableView, driver: Driver<[GifTVCellViewModel]>, buttonTap: PublishSubject<FeedViewModel.Input.FavouriteState>) {
         self._tableBindingDisposeBag = DisposeBag()
-        driver.drive(table.rx.items(cellIdentifier: GifTableViewCell.reuseId, cellType: GifTableViewCell.self)) { index, gifVm, cell in
-            print("feedTableVw.rx.items: index: \(index)")
+        driver.drive(table.rx.items(cellIdentifier: GifTableViewCell.reuseId, cellType: GifTableViewCell.self)) { [weak self] index, gifVm, cell in
             cell.bindViewModel(viewModel: gifVm, favouriteTapped: buttonTap.asObserver())
             
-            ////
-            #warning("Temp Code")
-            cell.textLabel?.text = gifVm.title
-            ////
+            if let strongSelf = self {
+                strongSelf._viewModelOutput?.favouritesStateRelay
+                    .bind(to: gifVm.favouritesUpdate)
+                    .disposed(by: strongSelf._tableBindingDisposeBag)
+            }            
         }
         .disposed(by: self._tableBindingDisposeBag)
     }

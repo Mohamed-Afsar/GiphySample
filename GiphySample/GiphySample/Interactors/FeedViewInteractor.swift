@@ -16,11 +16,14 @@ final class FeedViewInteractor {
     let trendingGifs = BehaviorRelay<[GifModel]>(value: [])
     let isSearchingGifs = BehaviorRelay<Bool>(value: false)
     let searchedGifs = BehaviorRelay<[GifModel]>(value: [])
-    let favouriteToggle = PublishRelay<String>()
+    let favouriteToggle = PublishRelay<FeedViewModel.Input.FavouriteState>()
     let searchTextRelay = BehaviorRelay<String>(value: "")
+    let _favouriteGifsIdRelay = BehaviorRelay<Set<String>>(value: [])
     
     // MARK: Private ICons
-    private let _giphyService = GiphyService()
+    private let _giphyService: GiphyServiceProtocol = GiphyService()
+    private let _favouriteGifsProvider = PersistedGifDataProvider()
+    private let _persistanceManager: PersistanceManageable = PersistanceManager()
     private let _disposeBag = DisposeBag()
     
     // MARK: Functions
@@ -65,9 +68,14 @@ final class FeedViewInteractor {
 // MARK: Helper Functions
 private extension FeedViewInteractor {
     func _bindRelayedData() {
-        #warning("TODO: Test this binding")
-        self.favouriteToggle.bind { (identifier) in
-            print("makeFavourite.bind: \(identifier)")
+        self.favouriteToggle.bind { [weak self] (isFavourite, gif) in
+            guard let strongSelf = self else { return }
+            if isFavourite {
+                strongSelf._persistanceManager.save(image: gif)
+            }
+            else {
+                strongSelf._persistanceManager.removeImage(id: gif.id)
+            }
         }
         .disposed(by: _disposeBag)
 
@@ -77,9 +85,18 @@ private extension FeedViewInteractor {
             .skip(1)
             .bind(onNext: { [weak self] in
                 guard !$0.isEmpty else { return }
-                print("searchTextRelay: $0: \($0)")
                 self?.fetchGifsMatching(query: $0, offset: 0)
             })
             .disposed(by: _disposeBag)
+        
+        
+        _favouriteGifsProvider.persistedGifs.map { (gifs) -> Set<String> in
+            let ids = gifs.map { $0.id! }
+            return Set(ids)
+        }
+        .bind(to: _favouriteGifsIdRelay)
+        .disposed(by: _disposeBag)
+        
+        _favouriteGifsProvider.start()
     }
 }
